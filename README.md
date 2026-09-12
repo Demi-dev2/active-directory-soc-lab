@@ -1,146 +1,293 @@
 # Active Directory SOC Lab
 
-A home cybersecurity lab designed to simulate a small Windows domain environment and, ultimately, a Security Operations Centre (SOC) monitoring workflow.
+## Overview
 
-The project combines Windows Server, Active Directory, Windows endpoints and an Ubuntu-based SIEM server to provide hands-on experience with identity management, security monitoring, detection and investigation.
+This project documents the development of a home Security Operations Centre (SOC) lab designed to simulate a small enterprise environment.
 
-## Project Status
+The lab combines Active Directory, a domain-joined Windows endpoint and a Linux-based SIEM server to create an environment where security telemetry can be collected, monitored and investigated.
 
-**Current Phase:** Active Directory infrastructure complete — SIEM deployment next.
+The project is being built progressively, with configuration decisions, troubleshooting, verification and security monitoring documented throughout the process.
 
-The lab currently has a functioning Active Directory domain with a Windows Server 2025 domain controller and a domain-joined Windows 11 workstation.
+## Objectives
 
-The next phase will deploy the SIEM and begin collecting security telemetry from the Windows environment.
+The main objectives of this project are to:
 
-## Current Architecture
+- Build a small enterprise-style virtual network
+- Deploy and configure Microsoft Active Directory
+- Configure centralised user and computer management
+- Join a Windows workstation to an Active Directory domain
+- Deploy a dedicated Linux SIEM server
+- Configure reliable networking between lab systems
+- Collect Windows security telemetry using Wazuh
+- Generate realistic security events
+- Develop detection and investigation skills
+- Document technical decisions and troubleshooting throughout the build
+
+## Skills Developed
+
+This project is designed to develop practical experience with:
+
+- Virtualisation
+- Windows Server administration
+- Active Directory Domain Services
+- Active Directory users, groups and organisational units
+- Windows domain authentication
+- DNS
+- Linux server administration
+- TCP/IP networking
+- Static IP configuration
+- Network troubleshooting
+- SSH remote administration
+- Windows security logging
+- SIEM deployment
+- Security monitoring
+- Alert investigation
+- Detection engineering
+- Technical documentation
+
+## Lab Architecture
+
+The current lab architecture consists of three primary virtual machines:
 
 ```text
-                         soclab.local
-                              │
-                    ┌─────────▼─────────┐
-                    │     AD-DC01       │
-                    │ Windows Server    │
-                    │ AD DS / DNS       │
-                    │ 10.0.2.10         │
-                    └─────────┬─────────┘
-                              │
-                     Domain Authentication
-                              │
-                    ┌─────────▼─────────┐
-                    │   WIN-CLIENT01    │
-                    │ Windows 11 Pro    │
-                    │ Domain Workstation│
-                    └───────────────────┘
-
-
-                    ┌───────────────────┐
-                    │    Ubuntu-SIEM    │
-                    │  Ubuntu Server    │
-                    │ SIEM deployment   │
-                    │      next         │
-                    └───────────────────┘
+                         VirtualBox NAT Network
+                              10.0.2.0/24
+                                   │
+              ┌────────────────────┼────────────────────┐
+              │                    │                    │
+              ▼                    ▼                    ▼
+          AD-DC01             WIN-CLIENT01          Ubuntu-SIEM
+       Windows Server          Windows 11          Ubuntu Server
+            2025                  Pro               24.04 LTS
+              │                    │                    │
+              │                    │                    │
+      Active Directory      Domain-joined          Wazuh SIEM
+          + DNS               workstation           (planned)
+              │                    │                    │
+              └──────────────┬─────┘                    │
+                             │                          │
+                        soclab.local                    │
+                             │                          │
+                             └──── security telemetry ──┘
+                                      (planned)
 ```
 
+## Systems
+
+### AD-DC01
+
+`AD-DC01` is the Active Directory domain controller for the lab.
+
+Configuration:
+
+- Windows Server 2025 Standard Evaluation
+- Active Directory Domain Services
+- DNS
+- Domain: `soclab.local`
+- NetBIOS domain: `SOCLAB`
+- Static IP: `10.0.2.10`
+
+The server provides centralised identity, authentication and directory services for the Windows environment.
+
+### WIN-CLIENT01
+
+`WIN-CLIENT01` is the Windows workstation used to simulate a domain-connected enterprise endpoint.
+
+Configuration:
+
+- Windows 11 Pro
+- Hostname: `WIN-CLIENT01`
+- Joined to `soclab.local`
+- Uses `AD-DC01` for domain services and DNS
+
+Test domain users can authenticate to the workstation, allowing realistic Windows authentication and security events to be generated.
+
+### Ubuntu-SIEM
+
+`Ubuntu-SIEM` is the dedicated Linux server that will host the SIEM platform.
+
+Final configuration:
+
+- Ubuntu Server 24.04.4 LTS
+- Hostname: `siem-server`
+- 4 vCPUs
+- 8 GB RAM
+- 60 GB virtual disk
+- Approximately 58 GB root filesystem
+- Static IP: `10.0.2.20/24`
+- Gateway: `10.0.2.1`
+- Primary DNS: `10.0.2.10`
+- Secondary DNS: `8.8.8.8`
+- OpenSSH enabled
+
+Wazuh will be deployed on this system to provide security monitoring, event analysis and investigation capabilities.
+
 ## Active Directory Structure
+
+The Active Directory environment uses the following organisational structure:
 
 ```text
 soclab.local
 │
-├── Domain Controllers
-│   └── AD-DC01
-│
 └── SOC-Lab
+    │
     ├── Users
     │   ├── Alex Morgan (amorgan)
     │   └── Jordan Lee (jlee)
     │
     ├── Groups
     │   └── SOC-Analysts
-    │       └── amorgan
     │
     └── Workstations
         └── WIN-CLIENT01
 ```
 
-## Completed
+The test accounts allow different authentication and group-membership scenarios to be generated within the lab.
 
-### Ubuntu Server Foundation
+`amorgan` is a member of the `SOC-Analysts` security group, while `jlee` represents a standard domain user.
 
-- Deployed Ubuntu Server 26.04.1 LTS
-- Configured the `siem-server` hostname
-- Installed and enabled OpenSSH
-- Verified networking, storage and SSH operation
-- Troubleshot an initially inactive SSH service
+No passwords or sensitive credentials are stored in this repository.
 
-### Windows Server & Active Directory
+## Networking
 
-- Deployed Windows Server 2025
-- Configured `AD-DC01` with a static IPv4 address
-- Installed Active Directory Domain Services
-- Created the `soclab.local` forest and domain
-- Configured DNS and Global Catalog services
-- Created dedicated OUs for users, groups and workstations
-- Created fictional domain users for testing
+All virtual machines communicate through a VirtualBox NAT Network using the private network:
+
+`10.0.2.0/24`
+
+Important infrastructure addresses:
+
+| System | Address | Purpose |
+|---|---|---|
+| AD-DC01 | `10.0.2.10` | Active Directory and DNS |
+| Ubuntu-SIEM | `10.0.2.20` | SIEM server |
+| WIN-CLIENT01 | DHCP | Domain workstation |
+| NAT Gateway | `10.0.2.1` | External network access |
+
+The Ubuntu SIEM server uses a static address so monitored systems can reliably communicate with the SIEM infrastructure.
+
+## Troubleshooting and Engineering Decisions
+
+Troubleshooting and configuration decisions are being documented as part of the project rather than only recording the final working environment.
+
+### Ubuntu Storage
+
+During the initial Ubuntu deployment, the virtual disk contained unused capacity inside the LVM volume group.
+
+The root logical volume was expanded so the available storage could be used by the operating system.
+
+During the later rebuild, the root logical volume was configured during installation to use the available LVM capacity.
+
+### Network Gateway
+
+The initial static Ubuntu network configuration assumed the VirtualBox NAT gateway was `10.0.2.2`.
+
+This allowed communication with the domain controller but external connectivity failed.
+
+The interface was temporarily returned to DHCP and the routing table was examined. This identified `10.0.2.1` as the gateway supplied by the VirtualBox NAT Network.
+
+The static configuration was rebuilt using the verified gateway and connectivity to both the Active Directory server and the internet was confirmed.
+
+### Ubuntu Rebuild
+
+The original SIEM host was built using Ubuntu Server 26.04.
+
+Before Wazuh deployment, the platform requirements were reviewed and the SIEM server was rebuilt using Ubuntu Server 24.04 LTS to provide a supported environment for the planned Wazuh deployment.
+
+The VM resources were also increased to:
+
+- 4 vCPUs
+- 8 GB RAM
+- 60 GB storage
+
+This ensured the SIEM platform would be deployed on a more appropriate foundation.
+
+### SSH Host Key Change
+
+After rebuilding the Ubuntu server, SSH correctly detected that the host key associated with the previous VM had changed.
+
+The obsolete key was removed from the Windows host's `known_hosts` file and the identity of the rebuilt server was accepted when reconnecting.
+
+This demonstrated how SSH host-key verification can help identify when the identity of a remote system unexpectedly changes.
+
+## Remote Administration
+
+OpenSSH is enabled on `Ubuntu-SIEM`.
+
+Because the VM operates behind the VirtualBox NAT Network, SSH access from the physical Windows host uses port forwarding:
+
+```text
+Windows Host
+127.0.0.1:2222
+       │
+       ▼
+VirtualBox NAT Port Forwarding
+       │
+       ▼
+Ubuntu-SIEM
+10.0.2.20:22
+```
+
+The server can be administered from Windows using:
+
+```powershell
+ssh -p 2222 demi@127.0.0.1
+```
+
+This provides remote command-line administration without requiring direct interaction with the VirtualBox console.
+
+## Project Status
+
+### Current Phase: SIEM Deployment
+
+The core virtual lab infrastructure has been deployed and verified.
+
+Completed:
+
+- Deployed Windows Server 2025 domain controller (`AD-DC01`)
+- Created the `soclab.local` Active Directory forest
+- Configured Active Directory DNS
+- Created organisational units for users, groups and workstations
+- Created test domain users
 - Created the `SOC-Analysts` security group
+- Deployed Windows 11 endpoint (`WIN-CLIENT01`)
+- Joined the Windows endpoint to `soclab.local`
+- Verified domain-user authentication
+- Verified communication with the domain controller
+- Deployed Ubuntu Server 24.04 LTS as the SIEM host
+- Configured dedicated SIEM server resources
+- Configured static networking
+- Verified SIEM-to-domain-controller connectivity
+- Verified external network connectivity
+- Configured and verified SSH remote administration
+- Documented configuration and troubleshooting in GitHub
 
-### Windows Workstation
+## Next Stage
 
-- Deployed Windows 11 Pro as `WIN-CLIENT01`
-- Configured the workstation to use the domain controller for DNS
-- Troubleshot VirtualBox network communication between the lab systems
-- Joined `WIN-CLIENT01` to `soclab.local`
-- Successfully authenticated using the `amorgan` domain account
-- Verified `AD-DC01` as the workstation's logon server
-- Organised the workstation inside the Active Directory `Workstations` OU
+The next stage is to deploy **Wazuh** on `Ubuntu-SIEM`.
 
-## Troubleshooting
+After Wazuh is operational, the Windows domain controller and workstation will be connected as monitored systems.
 
-The project includes documentation of issues encountered during deployment rather than only documenting the final working configuration.
+The project will then move into:
 
-Examples so far include:
-
-- OpenSSH being installed but initially inactive on the Ubuntu server
-- VirtualBox's initial NAT configuration preventing the Windows virtual machines from communicating as required
-- Moving the Windows systems onto a shared NAT Network and verifying connectivity before joining the domain
-
-## Next Phase
-
-The next stage will focus on the SOC monitoring environment:
-
-1. Connect `Ubuntu-SIEM` to the shared lab network
-2. Deploy and configure the SIEM
-3. Connect Windows systems to the SIEM
-4. Collect Windows security telemetry
-5. Generate controlled security events
-6. Develop and test detections
-7. Investigate security events using the collected telemetry
+1. Windows security event collection
+2. Authentication monitoring
+3. Security alert generation
+4. Detection testing
+5. Event investigation
+6. Analysis of suspicious activity
+7. Development of custom detection rules where appropriate
 
 ## Documentation
 
-Detailed build documentation is available in the [`setup`](setup/) directory:
+Detailed setup documentation is available in the `setup` directory:
 
-- [`Ubuntu SIEM Server Setup`](setup/ubuntu-siem.md)
-- [`Windows Server & Active Directory Setup`](setup/active-directory.md)
-- [`Windows Domain Workstation Setup`](setup/windows-client.md)
+- `setup/active-directory.md` — Windows Server and Active Directory deployment
+- `setup/ubuntu-siem.md` — Ubuntu SIEM server deployment, networking and SSH configuration
 
-Supporting screenshots are stored in the [`screenshots`](screenshots/) directory.
+Supporting verification screenshots are stored in the `screenshots` directory.
 
-## Project Goals
+## Security Notice
 
-The goal of this project is to develop practical experience with:
+This lab is designed for cybersecurity education and defensive security experimentation.
 
-- Windows Server administration
-- Active Directory and centralised identity management
-- Windows domain authentication
-- DNS and network configuration
-- Linux server administration
-- SIEM deployment and administration
-- Security log collection
-- Detection engineering
-- Security event investigation
-- Technical troubleshooting
-- Cybersecurity documentation
-
-## Disclaimer
-
-This project is conducted entirely within an isolated virtual lab environment using fictional users and test systems. Security testing and event generation are performed only against systems within the lab.
+All users, systems and credentials used in the environment are test resources created specifically for the lab. No real credentials are stored in this repository.
