@@ -123,6 +123,7 @@ Detailed setup documentation:
 
 - [Ubuntu SIEM Setup](setup/ubuntu-siem.md)
 - [Active Directory Setup](setup/active-directory.md)
+- [Windows 11 Domain Workstation Setup](setup/windows-client.md)
 - [Wazuh SIEM Deployment](setup/wazuh.md)
 
 Supporting evidence is available in the [`screenshots`](screenshots/) directory.
