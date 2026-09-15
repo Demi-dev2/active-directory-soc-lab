@@ -1,293 +1,138 @@
 # Active Directory SOC Lab
 
-## Overview
+A home cybersecurity lab simulating a small enterprise Windows environment with Active Directory and centralised security monitoring using Wazuh.
 
-This project documents the development of a home Security Operations Centre (SOC) lab designed to simulate a small enterprise environment.
+## Project Overview
 
-The lab combines Active Directory, a domain-joined Windows endpoint and a Linux-based SIEM server to create an environment where security telemetry can be collected, monitored and investigated.
+This project was built to gain practical experience with:
 
-The project is being built progressively, with configuration decisions, troubleshooting, verification and security monitoring documented throughout the process.
+- Active Directory and Windows domain administration
+- Windows and Linux server configuration
+- Networking and DNS
+- SIEM deployment and endpoint monitoring
+- Windows Security event analysis
+- Security troubleshooting and threat investigation
 
-## Objectives
-
-The main objectives of this project are to:
-
-- Build a small enterprise-style virtual network
-- Deploy and configure Microsoft Active Directory
-- Configure centralised user and computer management
-- Join a Windows workstation to an Active Directory domain
-- Deploy a dedicated Linux SIEM server
-- Configure reliable networking between lab systems
-- Collect Windows security telemetry using Wazuh
-- Generate realistic security events
-- Develop detection and investigation skills
-- Document technical decisions and troubleshooting throughout the build
-
-## Skills Developed
-
-This project is designed to develop practical experience with:
-
-- Virtualisation
-- Windows Server administration
-- Active Directory Domain Services
-- Active Directory users, groups and organisational units
-- Windows domain authentication
-- DNS
-- Linux server administration
-- TCP/IP networking
-- Static IP configuration
-- Network troubleshooting
-- SSH remote administration
-- Windows security logging
-- SIEM deployment
-- Security monitoring
-- Alert investigation
-- Detection engineering
-- Technical documentation
-
-## Lab Architecture
-
-The current lab architecture consists of three primary virtual machines:
+## Architecture
 
 ```text
-                         VirtualBox NAT Network
-                              10.0.2.0/24
-                                   │
-              ┌────────────────────┼────────────────────┐
-              │                    │                    │
-              ▼                    ▼                    ▼
-          AD-DC01             WIN-CLIENT01          Ubuntu-SIEM
-       Windows Server          Windows 11          Ubuntu Server
-            2025                  Pro               24.04 LTS
-              │                    │                    │
-              │                    │                    │
-      Active Directory      Domain-joined          Wazuh SIEM
-          + DNS               workstation           (planned)
-              │                    │                    │
-              └──────────────┬─────┘                    │
-                             │                          │
-                        soclab.local                    │
-                             │                          │
-                             └──── security telemetry ──┘
-                                      (planned)
+              soclab.local
+                   │
+          ┌────────┴────────┐
+          │                 │
+      AD-DC01         WIN-CLIENT01
+ Windows Server 2025    Windows 11
+  Domain Controller     Workstation
+     + DNS                 │
+          │                │
+          └──── Wazuh Agents ────┐
+                                 │
+                                 ▼
+                           Ubuntu SIEM
+                            10.0.2.20
+                                 │
+                    ┌────────────┼────────────┐
+                    │            │            │
+                 Manager      Indexer      Dashboard
 ```
 
 ## Systems
 
-### AD-DC01
+| System | Purpose | IP |
+|---|---|---|
+| `AD-DC01` | Domain Controller + DNS | `10.0.2.10` |
+| `WIN-CLIENT01` | Domain-joined Windows workstation | DHCP |
+| `siem-server` | Wazuh SIEM | `10.0.2.20` |
 
-`AD-DC01` is the Active Directory domain controller for the lab.
+All systems operate within a VirtualBox NAT Network.
 
-Configuration:
+## Active Directory
 
-- Windows Server 2025 Standard Evaluation
-- Active Directory Domain Services
-- DNS
-- Domain: `soclab.local`
-- NetBIOS domain: `SOCLAB`
-- Static IP: `10.0.2.10`
-
-The server provides centralised identity, authentication and directory services for the Windows environment.
-
-### WIN-CLIENT01
-
-`WIN-CLIENT01` is the Windows workstation used to simulate a domain-connected enterprise endpoint.
-
-Configuration:
-
-- Windows 11 Pro
-- Hostname: `WIN-CLIENT01`
-- Joined to `soclab.local`
-- Uses `AD-DC01` for domain services and DNS
-
-Test domain users can authenticate to the workstation, allowing realistic Windows authentication and security events to be generated.
-
-### Ubuntu-SIEM
-
-`Ubuntu-SIEM` is the dedicated Linux server that will host the SIEM platform.
-
-Final configuration:
-
-- Ubuntu Server 24.04.4 LTS
-- Hostname: `siem-server`
-- 4 vCPUs
-- 8 GB RAM
-- 60 GB virtual disk
-- Approximately 58 GB root filesystem
-- Static IP: `10.0.2.20/24`
-- Gateway: `10.0.2.1`
-- Primary DNS: `10.0.2.10`
-- Secondary DNS: `8.8.8.8`
-- OpenSSH enabled
-
-Wazuh will be deployed on this system to provide security monitoring, event analysis and investigation capabilities.
-
-## Active Directory Structure
-
-The Active Directory environment uses the following organisational structure:
+A Windows Server 2025 Domain Controller was configured for:
 
 ```text
 soclab.local
-│
 └── SOC-Lab
-    │
     ├── Users
-    │   ├── Alex Morgan (amorgan)
-    │   └── Jordan Lee (jlee)
-    │
     ├── Groups
-    │   └── SOC-Analysts
-    │
     └── Workstations
-        └── WIN-CLIENT01
 ```
 
-The test accounts allow different authentication and group-membership scenarios to be generated within the lab.
+The environment includes lab users, a `SOC-Analysts` security group and a Windows 11 workstation joined to the domain.
 
-`amorgan` is a member of the `SOC-Analysts` security group, while `jlee` represents a standard domain user.
+## Wazuh SIEM
 
-No passwords or sensitive credentials are stored in this repository.
+Wazuh 4.14 was deployed on Ubuntu Server 24.04 LTS.
 
-## Networking
+Wazuh agents were installed on:
 
-All virtual machines communicate through a VirtualBox NAT Network using the private network:
+- `AD-DC01`
+- `WIN-CLIENT01`
 
-`10.0.2.0/24`
+Both endpoints successfully reported security telemetry to the central Wazuh deployment.
 
-Important infrastructure addresses:
+![Active Wazuh agents](screenshots/33-wazuh-windows-agents-active.png)
 
-| System | Address | Purpose |
-|---|---|---|
-| AD-DC01 | `10.0.2.10` | Active Directory and DNS |
-| Ubuntu-SIEM | `10.0.2.20` | SIEM server |
-| WIN-CLIENT01 | DHCP | Domain workstation |
-| NAT Gateway | `10.0.2.1` | External network access |
+## Detection Validation
 
-The Ubuntu SIEM server uses a static address so monitored systems can reliably communicate with the SIEM infrastructure.
+Two controlled tests were performed to verify the monitoring pipeline.
 
-## Troubleshooting and Engineering Decisions
+### Failed Authentication
 
-Troubleshooting and configuration decisions are being documented as part of the project rather than only recording the final working environment.
+A failed domain authentication on `WIN-CLIENT01` generated Windows Security Event ID **4625** and was detected by Wazuh.
 
-### Ubuntu Storage
+![Failed authentication](screenshots/34-wazuh-failed-authentication-detection.png)
 
-During the initial Ubuntu deployment, the virtual disk contained unused capacity inside the LVM volume group.
+### Active Directory Group Change
 
-The root logical volume was expanded so the available storage could be used by the operating system.
+A controlled modification to the `SOC-Analysts` security group on `AD-DC01` generated a security event that was collected and investigated through Wazuh.
 
-During the later rebuild, the root logical volume was configured during installation to use the available LVM capacity.
+![AD group change](screenshots/35-wazuh-ad-group-change-detection.png)
 
-### Network Gateway
-
-The initial static Ubuntu network configuration assumed the VirtualBox NAT gateway was `10.0.2.2`.
-
-This allowed communication with the domain controller but external connectivity failed.
-
-The interface was temporarily returned to DHCP and the routing table was examined. This identified `10.0.2.1` as the gateway supplied by the VirtualBox NAT Network.
-
-The static configuration was rebuilt using the verified gateway and connectivity to both the Active Directory server and the internet was confirmed.
-
-### Ubuntu Rebuild
-
-The original SIEM host was built using Ubuntu Server 26.04.
-
-Before Wazuh deployment, the platform requirements were reviewed and the SIEM server was rebuilt using Ubuntu Server 24.04 LTS to provide a supported environment for the planned Wazuh deployment.
-
-The VM resources were also increased to:
-
-- 4 vCPUs
-- 8 GB RAM
-- 60 GB storage
-
-This ensured the SIEM platform would be deployed on a more appropriate foundation.
-
-### SSH Host Key Change
-
-After rebuilding the Ubuntu server, SSH correctly detected that the host key associated with the previous VM had changed.
-
-The obsolete key was removed from the Windows host's `known_hosts` file and the identity of the rebuilt server was accepted when reconnecting.
-
-This demonstrated how SSH host-key verification can help identify when the identity of a remote system unexpectedly changes.
-
-## Remote Administration
-
-OpenSSH is enabled on `Ubuntu-SIEM`.
-
-Because the VM operates behind the VirtualBox NAT Network, SSH access from the physical Windows host uses port forwarding:
+These tests demonstrated the workflow:
 
 ```text
-Windows Host
-127.0.0.1:2222
-       │
-       ▼
-VirtualBox NAT Port Forwarding
-       │
-       ▼
-Ubuntu-SIEM
-10.0.2.20:22
+Endpoint Activity
+      ↓
+Windows Security Event
+      ↓
+Wazuh Agent
+      ↓
+Wazuh Manager
+      ↓
+Detection & Investigation
 ```
 
-The server can be administered from Windows using:
+## Troubleshooting
 
-```powershell
-ssh -p 2222 demi@127.0.0.1
-```
+During the build I troubleshot several issues, including:
 
-This provides remote command-line administration without requiring direct interaction with the VirtualBox console.
+- VirtualBox networking and incorrect gateway configuration
+- Active Directory DNS forwarding
+- Ubuntu static networking
+- Windows agent installation
+- Wazuh Dashboard installation
+- Missing Dashboard TLS certificates
+- Dashboard-to-Manager API authentication
 
-## Project Status
-
-### Current Phase: SIEM Deployment
-
-The core virtual lab infrastructure has been deployed and verified.
-
-Completed:
-
-- Deployed Windows Server 2025 domain controller (`AD-DC01`)
-- Created the `soclab.local` Active Directory forest
-- Configured Active Directory DNS
-- Created organisational units for users, groups and workstations
-- Created test domain users
-- Created the `SOC-Analysts` security group
-- Deployed Windows 11 endpoint (`WIN-CLIENT01`)
-- Joined the Windows endpoint to `soclab.local`
-- Verified domain-user authentication
-- Verified communication with the domain controller
-- Deployed Ubuntu Server 24.04 LTS as the SIEM host
-- Configured dedicated SIEM server resources
-- Configured static networking
-- Verified SIEM-to-domain-controller connectivity
-- Verified external network connectivity
-- Configured and verified SSH remote administration
-- Documented configuration and troubleshooting in GitHub
-
-## Next Stage
-
-The next stage is to deploy **Wazuh** on `Ubuntu-SIEM`.
-
-After Wazuh is operational, the Windows domain controller and workstation will be connected as monitored systems.
-
-The project will then move into:
-
-1. Windows security event collection
-2. Authentication monitoring
-3. Security alert generation
-4. Detection testing
-5. Event investigation
-6. Analysis of suspicious activity
-7. Development of custom detection rules where appropriate
+These issues were diagnosed by isolating components, checking service status and logs, applying targeted fixes and verifying functionality.
 
 ## Documentation
 
-Detailed setup documentation is available in the `setup` directory:
+Detailed setup documentation:
 
-- `setup/active-directory.md` — Windows Server and Active Directory deployment
-- `setup/ubuntu-siem.md` — Ubuntu SIEM server deployment, networking and SSH configuration
+- [Ubuntu SIEM Setup](setup/ubuntu-siem.md)
+- [Active Directory Setup](setup/active-directory.md)
+- [Wazuh SIEM Deployment](setup/wazuh.md)
 
-Supporting verification screenshots are stored in the `screenshots` directory.
+Supporting evidence is available in the [`screenshots`](screenshots/) directory.
 
-## Security Notice
+## Project Status
 
-This lab is designed for cybersecurity education and defensive security experimentation.
+**Version 1 Complete**
 
-All users, systems and credentials used in the environment are test resources created specifically for the lab. No real credentials are stored in this repository.
+The lab successfully demonstrates a small Active Directory environment with centralised endpoint monitoring, security-event collection and controlled detection validation using Wazuh.
+
+## Security
+
+This repository contains only lab information. No real credentials, private keys or sensitive personal data are included.
